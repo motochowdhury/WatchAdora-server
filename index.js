@@ -182,5 +182,22 @@ app.post("/wishlist", async (req, res) => {
   }
 });
 
+// Report To admin
+
+app.post("/reportadmin", async (req, res) => {
+  try {
+    const reportedProduct = req.body;
+    const data = await reportedProducts.insertOne(reportedProduct);
+    res.send({
+      success: true,
+      data,
+    });
+  } catch (err) {
+    res.send({
+      success: false,
+      err,
+    });
+  }
+});
 // Listener
 app.listen(port, () => console.log(`server is running at port: ${port}`));
