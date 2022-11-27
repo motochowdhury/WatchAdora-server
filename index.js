@@ -147,5 +147,23 @@ app.get("/products/:catId", async (req, res) => {
   }
 });
 
+// Booking API
+
+app.post("/booking", async (req, res) => {
+  try {
+    const booking = req.body;
+    const savedBooking = await bookings.insertOne(booking);
+    res.send({
+      success: true,
+      data: savedBooking,
+    });
+  } catch (err) {
+    res.send({
+      success: false,
+      err,
+    });
+  }
+});
+
 // Listener
 app.listen(port, () => console.log(`server is running at port: ${port}`));
