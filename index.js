@@ -165,5 +165,22 @@ app.post("/booking", async (req, res) => {
   }
 });
 
+// WishList API
+app.post("/wishlist", async (req, res) => {
+  try {
+    const wishProduct = req.body;
+    const savedWishProduct = await wishlist.insertOne(wishProduct);
+    res.send({
+      success: true,
+      data: savedWishProduct,
+    });
+  } catch (err) {
+    res.send({
+      success: false,
+      err,
+    });
+  }
+});
+
 // Listener
 app.listen(port, () => console.log(`server is running at port: ${port}`));
