@@ -7,8 +7,8 @@ const cors = require("cors");
 const port = process.env.PORT || 5000;
 
 // MidleWare
-app.use(express.json());
 app.use(cors());
+app.use(express.json());
 
 // MongoDB
 const uri = process.env.MONGO_URL;
@@ -134,7 +134,12 @@ app.get("/products", async (req, res) => {
 app.get("/products/:catId", async (req, res) => {
   try {
     const catId = req.params.catId;
-    const allProduct = await products.find({ catId: catId }).toArray();
+    const query = {
+      catId: catId,
+      paymentStatus: "unpaid",
+    };
+    const allProduct = await products.find(query).toArray();
+    // const product = allProduct.map((pd) => pd.paymentStatus !== "unpaid");
     res.send({
       success: true,
       data: allProduct,
