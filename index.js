@@ -131,6 +131,21 @@ app.get("/products", async (req, res) => {
     });
   }
 });
+app.get("/products/:catId", async (req, res) => {
+  try {
+    const catId = req.params.catId;
+    const allProduct = await products.find({ catId: catId }).toArray();
+    res.send({
+      success: true,
+      data: allProduct,
+    });
+  } catch (err) {
+    res.send({
+      success: false,
+      err: err.message,
+    });
+  }
+});
 
 // Listener
 app.listen(port, () => console.log(`server is running at port: ${port}`));
