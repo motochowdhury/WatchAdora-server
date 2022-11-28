@@ -134,6 +134,17 @@ app.get("/products", async (req, res) => {
     });
   }
 });
+
+app.post("/products", async (req, res) => {
+  try {
+    const data = req.body;
+    const addedProduct = await products.insertOne(data);
+    res.send(addedProduct);
+  } catch (err) {
+    res.send(err);
+  }
+});
+
 app.get("/products/:catId", async (req, res) => {
   try {
     const catId = req.params.catId;
@@ -203,7 +214,7 @@ app.post("/wishlist", async (req, res) => {
 app.get("/wishlist", async (req, res) => {
   try {
     const email = req.query.email;
-    const allWishlist = await wishlist.find({ email: email });
+    const allWishlist = await wishlist.find({ email: email }).toArray();
     res.send(allWishlist);
   } catch (err) {
     res.send(err);
