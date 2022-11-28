@@ -200,6 +200,16 @@ app.post("/wishlist", async (req, res) => {
   }
 });
 
+app.get("/wishlist", async (req, res) => {
+  try {
+    const email = req.query.email;
+    const allWishlist = await wishlist.find({ email: email });
+    res.send(allWishlist);
+  } catch (err) {
+    res.send(err);
+  }
+});
+
 // Report To admin
 
 app.post("/reportadmin", async (req, res) => {
