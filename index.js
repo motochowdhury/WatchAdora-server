@@ -54,24 +54,18 @@ app.post("/users", async (req, res) => {
   }
 });
 
-app.get("/users", async (req, res) => {
+app.get("/user", async (req, res) => {
   try {
     const email = req.query.email;
     const query = { email: email };
     const user = await users.findOne(query);
-    res.send({
-      success: true,
-      data: user,
-    });
+    res.send(user);
   } catch (err) {
-    res.send({
-      success: false,
-      err,
-    });
+    res.send(err);
   }
 });
 
-app.patch("/users", async (req, res) => {
+app.patch("/user", async (req, res) => {
   try {
     const email = req.query.email;
     const query = { email: email };
@@ -87,6 +81,15 @@ app.patch("/users", async (req, res) => {
       success: false,
       err,
     });
+  }
+});
+
+app.get("/users", async (req, res) => {
+  try {
+    const allUsers = await users.find({}).toArray();
+    res.send(allUsers);
+  } catch (err) {
+    res.send(err);
   }
 });
 
@@ -170,6 +173,16 @@ app.post("/booking", async (req, res) => {
   }
 });
 
+app.get("/booking", async (req, res) => {
+  try {
+    const email = req.query.email;
+    const allBookings = await bookings.find({ email: email }).toArray();
+    res.send(allBookings);
+  } catch (err) {
+    res.send(err);
+  }
+});
+
 // WishList API
 app.post("/wishlist", async (req, res) => {
   try {
@@ -202,6 +215,15 @@ app.post("/reportadmin", async (req, res) => {
       success: false,
       err,
     });
+  }
+});
+
+app.get("/report", async (req, res) => {
+  try {
+    const reportedItems = await reportedProducts.find({}).toArray();
+    res.send(reportedItems);
+  } catch (err) {
+    res.send(err);
   }
 });
 // Listener
