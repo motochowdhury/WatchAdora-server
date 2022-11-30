@@ -484,5 +484,61 @@ app.get("/report", verifyJWT, verifyAdmin, async (req, res) => {
   }
 });
 
+app.delete("/report", verifyJWT, verifyAdmin, async (req, res) => {
+  try {
+    const id = req.query.id;
+    const prodId = req.query.productId;
+    const query = {
+      _id: ObjectId(id),
+    };
+    const filter = {
+      productId: prodId,
+    };
+    const prodQuery = {
+      _id: ObjectId(prodId),
+    };
+    const deleteFromBooking = await bookings.deleteOne(query);
+    const deleteProd = await products.deleteOne(prodQuery);
+    const deleteFromWish = await wishlist.deleteOne(filter);
+    const deletedItem = await reportedProducts.deleteOne(query);
+    res.send(deletedItem);
+  } catch (err) {
+    res.send(err);
+  }
+});
+
+// Payment
+app.post("/create-payment", async (req, res) => {
+  const booking = req.body;
+  const price = booking.resalePrice;
+  const amount = price * 100;
+  const paymentIntent = await stripe.paymentIntents.create({
+    currency: "usd",
+    amount: amount,
+    payment_method_types: ["card"],
+  });
+  res.send({
+    clientSecret: paymentIntent.client_secret,
+  });
+});
+
+app.post("/payments", async (req, res) => {
+  const payment = req.body;
+  const result = await payments.insertOne(payment);
+  const id = payment.bookingId;
+  const productId = payment.productId;
+  const productQuery = {
+    _id: ObjectId(productId),
+  };
+  const filter = { _id: ObjectId(id) };
+  const updatedDoc = {
+    $set: {
+      paymentStatus: "paid",
+    },
+  };
+  const updatedResult = await products.updateOne(productQuery, updatedDoc);
+  const updateBooking = await bookings.updateOne(filter, updatedDoc);
+  res.send(result);
+});
 // Listener
 app.listen(port, () => console.log(`server is running at port: ${port}`));
