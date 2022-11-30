@@ -311,5 +311,153 @@ app.delete("/product", verifyJWT, verifySeller, async (req, res) => {
   }
 });
 
+app.patch("/product/unsold", verifyJWT, verifySeller, async (req, res) => {
+  try {
+    const id = req.query.id;
+    const query = {
+      _id: ObjectId(id),
+    };
+    const replaceDoc = {
+      $set: {
+        paymentStatus: "unpaid",
+      },
+    };
+    const result = await products.updateOne(query, replaceDoc);
+    res.send(result);
+  } catch (err) {
+    res.send(err);
+  }
+});
+
+app.get("/ad", verifyJWT, async (req, res) => {
+  try {
+    const adProducts = await products
+      .find({ paymentStatus: "unpaid", ad: true })
+      .toArray();
+    res.send(adProducts);
+  } catch (err) {
+    res.send(err);
+  }
+});
+
+app.get("/seller/products", verifyJWT, verifySeller, async (req, res) => {
+  try {
+    const email = req.query.email;
+    const allProduct = await products
+      .find({ "seller.sellerEmail": email })
+      .toArray();
+    res.send(allProduct);
+  } catch (err) {
+    res.send(err);
+  }
+});
+
+// Booking API
+
+app.post("/booking", verifyJWT, async (req, res) => {
+  try {
+    const booking = req.body;
+    const savedBooking = await bookings.insertOne(booking);
+    res.send({
+      success: true,
+      data: savedBooking,
+    });
+  } catch (err) {
+    res.send({
+      success: false,
+      err,
+    });
+  }
+});
+
+app.get("/booking", verifyJWT, async (req, res) => {
+  try {
+    const email = req.query.email;
+    const allBookings = await bookings.find({ email: email }).toArray();
+    res.send(allBookings);
+  } catch (err) {
+    res.send(err);
+  }
+});
+
+app.get("/booking/:id", verifyJWT, async (req, res) => {
+  try {
+    const id = req.params.id;
+    const query = {
+      _id: ObjectId(id),
+    };
+    const bookingProd = await bookings.findOne(query);
+    res.send(bookingProd);
+  } catch (err) {
+    res.send(err);
+  }
+});
+
+app.delete("/booking", verifyJWT, async (req, res) => {
+  try {
+    const id = req.query.id;
+    const query = {
+      _id: ObjectId(id),
+    };
+    const deletedItem = await bookings.deleteOne(query);
+    res.send(deletedItem);
+  } catch (err) {
+    res.send(err);
+  }
+});
+
+// WishList API
+app.post("/wishlist", verifyJWT, async (req, res) => {
+  try {
+    const wishProduct = req.body;
+    const filter = {
+      productId: req.body.productId,
+      email: req.body.email,
+    };
+    const result = await wishlist.findOne(filter);
+    if (result) {
+      return res.send({
+        success: true,
+        data: result,
+      });
+    }
+    const savedWishProduct = await wishlist.insertOne(wishProduct);
+    res.send({
+      success: true,
+      data: savedWishProduct,
+    });
+  } catch (err) {
+    res.send({
+      success: false,
+      err,
+    });
+  }
+});
+
+app.get("/wishlist", verifyJWT, async (req, res) => {
+  try {
+    const email = req.query.email;
+    const allWishlist = await wishlist.find({ email: email }).toArray();
+    res.send(allWishlist);
+  } catch (err) {
+    res.send(err);
+  }
+});
+
+app.delete("/wishlist", verifyJWT, async (req, res) => {
+  try {
+    const id = req.query.id;
+    const query = {
+      _id: ObjectId(id),
+    };
+    const deletedItem = await wishlist.deleteOne(query);
+    res.send(deletedItem);
+  } catch (err) {
+    res.send(err);
+  }
+});
+
+// Report To admin
+
 // Listener
 app.listen(port, () => console.log(`server is running at port: ${port}`));
