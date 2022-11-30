@@ -198,5 +198,23 @@ app.delete("/admin/seller", verifyJWT, verifyAdmin, async (req, res) => {
   }
 });
 
+app.patch("/admin/seller", verifyJWT, verifyAdmin, async (req, res) => {
+  try {
+    const email = req.query.email;
+    const query = {
+      email: email,
+    };
+    const updatedDoc = {
+      $set: {
+        status: "verified",
+      },
+    };
+    const verify = await users.updateOne(query, updatedDoc);
+    res.send(verify);
+  } catch (err) {
+    res.send(err);
+  }
+});
+
 // Listener
 app.listen(port, () => console.log(`server is running at port: ${port}`));
