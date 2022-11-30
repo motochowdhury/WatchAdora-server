@@ -173,5 +173,30 @@ app.get("/user", async (req, res) => {
   }
 });
 
+app.get("/admin/sellers", verifyJWT, verifyAdmin, async (req, res) => {
+  try {
+    const allSellers = await users.find({ userRule: "seller" }).toArray();
+    res.send(allSellers);
+  } catch (err) {
+    res.send(err);
+  }
+});
+
+app.delete("/admin/seller", verifyJWT, verifyAdmin, async (req, res) => {
+  try {
+    const id = req.query.id;
+    const email = req.query.email;
+    const query = {
+      _id: ObjectId(id),
+    };
+    const deleteProd = await products.deleteMany({ email: email });
+    const deleteUser = await users.deleteOne(query);
+    res.send(deleteUser);
+  } catch (err) {
+    console.log(err);
+    res.send(err);
+  }
+});
+
 // Listener
 app.listen(port, () => console.log(`server is running at port: ${port}`));
