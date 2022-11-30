@@ -475,5 +475,14 @@ app.post("/reportadmin", verifyJWT, async (req, res) => {
   }
 });
 
+app.get("/report", verifyJWT, verifyAdmin, async (req, res) => {
+  try {
+    const reportedItems = await reportedProducts.find({}).toArray();
+    res.send(reportedItems);
+  } catch (err) {
+    res.send(err);
+  }
+});
+
 // Listener
 app.listen(port, () => console.log(`server is running at port: ${port}`));
