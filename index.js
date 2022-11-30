@@ -2,13 +2,30 @@ require("dotenv").config();
 const express = require("express");
 const app = express();
 const jwt = require("jsonwebtoken");
-const { MongoClient } = require("mongodb");
+const stripe = require("stripe")(process.env.STRIPE_SECRET);
+const { MongoClient, ObjectId } = require("mongodb");
 const cors = require("cors");
 const port = process.env.PORT || 5000;
 
 // MidleWare
 app.use(cors());
 app.use(express.json());
+function verifyJWT(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).send("unauthorized access");
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
+    if (err) {
+      return res.status(403).send({ message: "forbidden access" });
+    }
+    req.decoded = decoded;
+    next();
+  });
+}
 
 // MongoDB
 const uri = process.env.MONGO_URL;
@@ -32,15 +49,87 @@ const users = DB.collection("users");
 const bookings = DB.collection("bookings");
 const wishlist = DB.collection("wishlist");
 const reportedProducts = DB.collection("reportedProducts");
+const payments = DB.collection("payments");
+
+// Verify Admin Seller
+
+const verifyAdmin = async (req, res, next) => {
+  const decodedEmail = req.decoded.email;
+  const query = { email: decodedEmail };
+  const user = await users.findOne(query);
+
+  if (user?.userRule !== "admin") {
+    return res.status(403).send({ message: "forbidden access" });
+  }
+  next();
+};
+const verifySeller = async (req, res, next) => {
+  const decodedEmail = req.decoded.email;
+  const query = { email: decodedEmail };
+  const user = await users.findOne(query);
+
+  if (user?.userRule !== "seller") {
+    return res.status(403).send({ message: "forbidden access" });
+  }
+  next();
+};
 
 app.get("/", (req, res) => {
   res.send("Server Is Up");
+});
+
+app.get("/jwt", async (req, res) => {
+  const email = req.query.email;
+
+  const token = jwt.sign({ email }, process.env.ACCESS_TOKEN);
+  return res.send({ accesstoken: token });
+  res.status(403).send({ accessToken: "" });
+});
+
+// Check Admin Rule
+app.get("/admin", async (req, res) => {
+  try {
+    const email = req.query.email;
+    const query = {
+      email: email,
+    };
+    const user = await users.findOne(query);
+
+    res.send({ isAdmin: user?.userRule === "admin" });
+  } catch (err) {
+    res.send(err);
+  }
+});
+
+// Check seller rule
+app.get("/seller", async (req, res) => {
+  try {
+    const email = req.query.email;
+    const query = {
+      email: email,
+    };
+    const user = await users.findOne(query);
+
+    res.send({ isAdmin: user?.userRule === "seller" });
+  } catch (err) {
+    res.send(err);
+  }
 });
 
 // User API
 app.post("/users", async (req, res) => {
   try {
     const user = req.body;
+    const query = {
+      email: user?.email,
+    };
+    const currUser = await users.findOne(query);
+    if (currUser) {
+      return res.send({
+        success: true,
+        data: {},
+      });
+    }
     const createdUser = await users.insertOne(user);
     res.send({
       success: true,
@@ -65,187 +154,5 @@ app.get("/user", async (req, res) => {
   }
 });
 
-app.patch("/user", async (req, res) => {
-  try {
-    const email = req.query.email;
-    const query = { email: email };
-    const verify = { rule: req.body };
-    const user = await users.replaceOne(query, verify);
-
-    res.send({
-      success: true,
-      data: user,
-    });
-  } catch (err) {
-    res.send({
-      success: false,
-      err,
-    });
-  }
-});
-
-app.get("/users", async (req, res) => {
-  try {
-    const allUsers = await users.find({}).toArray();
-    res.send(allUsers);
-  } catch (err) {
-    res.send(err);
-  }
-});
-
-// categories API
-app.get("/categories", async (req, res) => {
-  try {
-    const categoriesArr = await categories.find({}).toArray();
-    res.send({
-      success: true,
-      data: categoriesArr,
-    });
-  } catch (err) {
-    res.send({
-      success: false,
-      err,
-    });
-  }
-});
-
-app.post("/categories", async (req, res) => {
-  try {
-    const result = await categories.insertOne(req.body);
-    res.send(result);
-  } catch (err) {
-    console.log(err.message);
-  }
-});
-
-//  products API
-
-app.get("/products", async (req, res) => {
-  try {
-    const allProduct = await products.find({}).toArray();
-    res.send({
-      success: true,
-      data: allProduct,
-    });
-  } catch (err) {
-    res.send({
-      success: false,
-      err: err.message,
-    });
-  }
-});
-
-app.post("/products", async (req, res) => {
-  try {
-    const data = req.body;
-    const addedProduct = await products.insertOne(data);
-    res.send(addedProduct);
-  } catch (err) {
-    res.send(err);
-  }
-});
-
-app.get("/products/:catId", async (req, res) => {
-  try {
-    const catId = req.params.catId;
-    const query = {
-      catId: catId,
-      paymentStatus: "unpaid",
-    };
-    const allProduct = await products.find(query).toArray();
-    // const product = allProduct.map((pd) => pd.paymentStatus !== "unpaid");
-    res.send({
-      success: true,
-      data: allProduct,
-    });
-  } catch (err) {
-    res.send({
-      success: false,
-      err: err.message,
-    });
-  }
-});
-
-// Booking API
-
-app.post("/booking", async (req, res) => {
-  try {
-    const booking = req.body;
-    const savedBooking = await bookings.insertOne(booking);
-    res.send({
-      success: true,
-      data: savedBooking,
-    });
-  } catch (err) {
-    res.send({
-      success: false,
-      err,
-    });
-  }
-});
-
-app.get("/booking", async (req, res) => {
-  try {
-    const email = req.query.email;
-    const allBookings = await bookings.find({ email: email }).toArray();
-    res.send(allBookings);
-  } catch (err) {
-    res.send(err);
-  }
-});
-
-// WishList API
-app.post("/wishlist", async (req, res) => {
-  try {
-    const wishProduct = req.body;
-    const savedWishProduct = await wishlist.insertOne(wishProduct);
-    res.send({
-      success: true,
-      data: savedWishProduct,
-    });
-  } catch (err) {
-    res.send({
-      success: false,
-      err,
-    });
-  }
-});
-
-app.get("/wishlist", async (req, res) => {
-  try {
-    const email = req.query.email;
-    const allWishlist = await wishlist.find({ email: email }).toArray();
-    res.send(allWishlist);
-  } catch (err) {
-    res.send(err);
-  }
-});
-
-// Report To admin
-
-app.post("/reportadmin", async (req, res) => {
-  try {
-    const reportedProduct = req.body;
-    const data = await reportedProducts.insertOne(reportedProduct);
-    res.send({
-      success: true,
-      data,
-    });
-  } catch (err) {
-    res.send({
-      success: false,
-      err,
-    });
-  }
-});
-
-app.get("/report", async (req, res) => {
-  try {
-    const reportedItems = await reportedProducts.find({}).toArray();
-    res.send(reportedItems);
-  } catch (err) {
-    res.send(err);
-  }
-});
 // Listener
 app.listen(port, () => console.log(`server is running at port: ${port}`));
