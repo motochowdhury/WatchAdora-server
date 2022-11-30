@@ -216,5 +216,100 @@ app.patch("/admin/seller", verifyJWT, verifyAdmin, async (req, res) => {
   }
 });
 
+app.delete("/admin/user", verifyJWT, verifyAdmin, async (req, res) => {
+  try {
+    const email = req.query.email;
+    const query = {
+      email: email,
+    };
+    const deleteBooking = await bookings.deleteMany(query);
+    const deleteWishList = await wishlist.deleteMany(query);
+    const deleteUser = await users.deleteOne(query);
+    res.send(deleteUser);
+  } catch (err) {
+    console.log(err);
+    res.send(err);
+  }
+});
+
+// categories API
+app.get("/categories", async (req, res) => {
+  try {
+    const categoriesArr = await categories.find({}).toArray();
+    res.send({
+      success: true,
+      data: categoriesArr,
+    });
+  } catch (err) {
+    res.send({
+      success: false,
+      err,
+    });
+  }
+});
+
+app.post("/products", verifyJWT, verifySeller, async (req, res) => {
+  try {
+    const data = req.body;
+    const addedProduct = await products.insertOne(data);
+    res.send(addedProduct);
+  } catch (err) {
+    res.send(err);
+  }
+});
+
+app.get("/products/:catId", verifyJWT, async (req, res) => {
+  try {
+    const catId = req.params.catId;
+    const query = {
+      catId: catId,
+      paymentStatus: "unpaid",
+    };
+    const allProduct = await products.find(query).toArray();
+    res.send({
+      success: true,
+      data: allProduct,
+    });
+  } catch (err) {
+    res.send({
+      success: false,
+      err: err.message,
+    });
+  }
+});
+
+app.patch("/product/ad", verifyJWT, verifySeller, async (req, res) => {
+  try {
+    const id = req.query.id;
+    const filter = {
+      _id: ObjectId(id),
+    };
+    const updatedDoc = {
+      $set: {
+        ad: true,
+      },
+    };
+    const result = await products.updateOne(filter, updatedDoc);
+    console.log(result);
+    res.send(result);
+  } catch (err) {
+    console.log(err);
+    res.send(err);
+  }
+});
+
+app.delete("/product", verifyJWT, verifySeller, async (req, res) => {
+  try {
+    const id = req.query.id;
+    const query = {
+      _id: ObjectId(id),
+    };
+    const result = await products.deleteOne(query);
+    res.send(result);
+  } catch (err) {
+    res.send(err);
+  }
+});
+
 // Listener
 app.listen(port, () => console.log(`server is running at port: ${port}`));
