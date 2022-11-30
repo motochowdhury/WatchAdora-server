@@ -154,5 +154,24 @@ app.get("/user", async (req, res) => {
   }
 });
 
+app.get("/users", verifyJWT, verifyAdmin, async (req, res) => {
+  try {
+    const allUsers = await users.find({ userRule: "buyer" }).toArray();
+    res.send(allUsers);
+  } catch (err) {
+    res.send(err);
+  }
+});
+
+app.get("/user", async (req, res) => {
+  try {
+    const email = req.query.email;
+    const user = await users.findOne({ email: email });
+    res.send(user);
+  } catch (err) {
+    res.send(err);
+  }
+});
+
 // Listener
 app.listen(port, () => console.log(`server is running at port: ${port}`));
